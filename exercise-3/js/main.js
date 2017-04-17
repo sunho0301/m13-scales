@@ -1,12 +1,7 @@
-/* Create a scatter plot of 1960 life expectancy (gdp) versus 2013 life expectancy (life_expectancy).
-		The variable "data" is accessible to you, as you read it in from data.js
-*/
+/* Create a barchart of drinking patterns*/
 $(function() {
     // Read in prepped_data file
     d3.csv('data/prepped_data.csv', function(error, allData) {
-        // Variables that should be accesible within the namespace
-        var xScale, yScale, currentData;
-
         // Track the sex (male, female) and drinking type (any, binge) in variables
         var sex = 'female';
         var type = 'binge';
@@ -16,28 +11,32 @@ $(function() {
             left: 70,
             bottom: 100,
             top: 50,
-            right: 50,
+            right: 50
         };
 
+        // Height and width of the total area
+        var height = 600;
+        var width = 1000;
+
         // Height/width of the drawing area for data symbols
-        var height = 600 - margin.bottom - margin.top;
-        var width = 1000 - margin.left - margin.right;
+        var drawHeight = height - margin.bottom - margin.top;
+        var drawWidth = width - margin.left - margin.right;
 
         // Select SVG to work with, setting width and height (the vis <div> is defined in the index.html file)
         var svg = d3.select('#vis')
             .append('svg')
-            .attr('height', 600)
-            .attr('width', 1000);
+            .attr('height', height)
+            .attr('width', width);
 
         // Append a 'g' element in which to place the rects, shifted down and right from the top left corner
         var g = svg.append('g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-            .attr('height', height)
-            .attr('width', width);
+            .attr('height', drawHeight)
+            .attr('width', drawWidth);
 
         // Append an xaxis label to your SVG, specifying the 'transform' attribute to position it (don't call the axis function yet)
         var xAxisLabel = svg.append('g')
-            .attr('transform', 'translate(' + margin.left + ',' + (height + margin.top) + ')')
+            .attr('transform', 'translate(' + margin.left + ',' + (drawHeight + margin.top) + ')')
             .attr('class', 'axis');
 
         // Append a yaxis label to your SVG, specifying the 'transform' attribute to position it (don't call the axis function yet)
@@ -47,13 +46,26 @@ $(function() {
 
         // Append text to label the y axis (don't specify the text yet)
         var xAxisText = svg.append('text')
-            .attr('transform', 'translate(' + (margin.left + width / 2) + ',' + (height + margin.top + 40) + ')')
+            .attr('transform', 'translate(' + (margin.left + drawWidth / 2) + ',' + (drawHeight + margin.top + 40) + ')')
             .attr('class', 'title');
 
         // Append text to label the y axis (don't specify the text yet)
         var yAxisText = svg.append('text')
-            .attr('transform', 'translate(' + (margin.left - 40) + ',' + (margin.top + height / 2) + ') rotate(-90)')
+            .attr('transform', 'translate(' + (margin.left - 40) + ',' + (margin.top + drawHeight / 2) + ') rotate(-90)')
             .attr('class', 'title');
+
+        // Define xAxis using d3.axisBottom(). Scale will be set in the setAxes function.
+        var xAxis = d3.axisBottom();
+
+        // Define yAxis using d3.axisLeft(). Scale will be set in the setAxes function.
+        var yAxis = d3.axisLeft()
+            .tickFormat(d3.format('.2s'));
+
+        // Define an xScale with d3.scaleBand. Domain/rage will be set in the setScales function.
+        var xScale = d3.scaleBand();
+
+        // Define a yScale with d3.scaleLinear. Domain/rage will be set in the setScales function.
+        var yScale = d3.scaleLinear();
 
         // Write a function for setting scales.
         var setScales = function(data) {
@@ -62,51 +74,47 @@ $(function() {
                 return d.state;
             });
 
-            // Define an ordinal xScale using rangeBands
-            xScale = d3.scaleBand()
-                .range([0, width], .2)
+            // Set the domain/range of your xScale
+            xScale.range([0, drawWidth])
+                .padding(0.1)
                 .domain(states);
 
-            // Get min/max values of the percent data
+            // Get min/max values of the percent data (for your yScale domain)
             var yMin = d3.min(data, function(d) {
-                return +d.percent
+                return +d.percent;
             });
 
             var yMax = d3.max(data, function(d) {
-                return +d.percent
+                return +d.percent;
             });
 
-            // Define the yScale: remember to draw from top to bottom!
-            yScale = d3.scaleLinear()
-                .range([height, 0])
+            // Set the domain/range of your yScale
+            yScale.range([drawHeight, 0])
                 .domain([0, yMax]);
-        }
+        };
 
         // Function for setting axes
         var setAxes = function() {
-            // Define x axis using d3.axisBottom(), assigning the scale as the xScale
-            var xAxis = d3.axisBottom()
-                .scale(xScale);
+            // Set the scale of your xAxis object
+            xAxis.scale(xScale);
 
-            // Define y axis using d3.axisLeft(), assigning the scale as the yScale
-            var yAxis = d3.axisLeft()
-                .scale(yScale)
-                .tickFormat(d3.format('.2s'));
+            // Set the scale of your yAxis object
+            yAxis.scale(yScale);
 
-            // Call xAxis
+            // Render (call) your xAxis in your xAxisLabel
             xAxisLabel.transition().duration(1500).call(xAxis);
 
-            // Call yAxis
+            // Render (call) your yAxis in your yAxisLabel
             yAxisLabel.transition().duration(1500).call(yAxis);
 
-            // Update labels
-            xAxisText.text('State')
-            yAxisText.text('Percent Drinking (' + sex + ', ' + type + ')')
+            // Update xAxisText and yAxisText labels
+            xAxisText.text('State');
+            yAxisText.text('Percent Drinking (' + sex + ', ' + type + ')');
         }
 
         // Write a function to filter down the data to the current sex and type
         var filterData = function() {
-            currentData = allData.filter(function(d) {
+            var currentData = allData.filter(function(d) {
                     return d.type == type && d.sex == sex
                 })
                 // Sort the data alphabetically
@@ -116,7 +124,14 @@ $(function() {
                     if (a.state_name > b.state_name) return 1;
                     return 0;
                 });
-        }
+            return currentData;
+        };
+
+        // Add tip
+        var tip = d3.tip().attr('class', 'd3-tip').html(function(d) {
+            return d.state_name;
+        });
+        g.call(tip);
 
         // Store the data-join in a function: make sure to set the scales and update the axes in your function.
         var draw = function(data) {
@@ -135,32 +150,28 @@ $(function() {
                     return xScale(d.state);
                 })
                 .attr('y', function(d) {
+                    return drawHeight;
+                })
+                .attr('height', 0)
+                .attr('class', 'bar')
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                .attr('width', xScale.bandwidth())
+                .merge(bars)
+                .transition()
+                .duration(500)
+                .delay(function(d, i) {
+                    return i * 50;
+                })
+                .attr('y', function(d) {
                     return yScale(d.percent);
                 })
                 .attr('height', function(d) {
-                    return height - yScale(d.percent);
-                })
-                .attr('width', xScale.bandwidth())
-                .attr('class', 'bar')
-                .attr('title', function(d) {
-                    return d.state_name;
+                    return drawHeight - yScale(d.percent);
                 });
 
             // Use the .exit() and .remove() methods to remove elements that are no longer in the data
             bars.exit().remove();
-
-            // Transition properties of the update selection
-            bars.transition()
-                .duration(1500)
-                .delay(function(d, i) {
-                    return i * 50;
-                })
-                .attr('height', function(d) {
-                    return height - yScale(d.percent);
-                })
-                .attr('y', function(d) {
-                    return yScale(d.percent);
-                });
         };
 
         // Assign a change event to input elements to set the sex/type values, then filter and update the data
@@ -172,22 +183,13 @@ $(function() {
             else type = val;
 
             // Filter data, update chart
-            filterData();
+            var currentData = filterData();
             draw(currentData);
         });
 
         // Filter data to the current settings then draw
-        filterData();
+        var currentData = filterData();
         draw(currentData);
-
-        /* Using jQuery, select all circles and apply a tooltip
-        If you want to use bootstrap, here's a hint:
-        http://stackoverflow.com/questions/14697232/how-do-i-show-a-bootstrap-tooltip-with-an-svg-object
-        */
-        $("rect").tooltip({
-            'container': 'body',
-            'placement': 'top'
-        });
 
     });
 });
