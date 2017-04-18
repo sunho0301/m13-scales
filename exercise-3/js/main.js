@@ -145,5 +145,15 @@ $(function() {
             .attr('height', function(d) {
                 return drawHeight - yScale(d.percent);
             });
+
+        function changeData(gender) {
+            if (gender == 1) {
+                console.log("male");
+            } else {
+                console.log("female");
+            }
+        };
+
+
     });
 });
